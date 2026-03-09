@@ -439,7 +439,7 @@
         const GRAVITY = 0.5;
         const JUMP_FORCE = -14;
         const BLOCK_SIZE = 40;
-        const GAME_TIME = 60; // 根据建议由 120 改为 60
+        const GAME_TIME = 30; // 根据反馈：60秒缩短至 30 秒，节奏更紧凑
         const MAX_LEVELS = 10;
         const LAYER_SPACING = 180;
         const RESPAWN_TIME = 10000;
@@ -906,8 +906,8 @@
             
             // 2. 全自动云端同步 (ntfy.sh 方案)
             try {
-                // 使用 fetch 发送到公开的 Webhook
-                await fetch('https://ntfy.sh/trae_mushroom_jibin_2026', {
+                // 使用 fetch 发送到公开的 Webhook (升级为 v2 提升稳定性)
+                await fetch('https://ntfy.sh/trae_mushroom_jibin_2026_v2', {
                     method: 'POST',
                     body: JSON.stringify(item),
                     headers: {
@@ -1001,21 +1001,29 @@
             });
         };
 
+        // 全局函数供 select 调用
         window.updateFeedbackStatus = (id, newStatus) => {
             const feedbackData = JSON.parse(localStorage.getItem('mushroom_feedback') || '[]');
             const index = feedbackData.findIndex(i => i.id === id);
-            if (index !== -1) {
+            if(index !== -1) {
                 feedbackData[index].status = newStatus;
                 localStorage.setItem('mushroom_feedback', JSON.stringify(feedbackData));
-                renderFeedbackList();
             }
         };
 
-        // 页面加载时同步
-        window.addEventListener('load', () => {
-            // 这里可以添加从云端拉取数据的逻辑
+        // 导出数据
+        document.getElementById('export-data').addEventListener('click', () => {
+            const data = localStorage.getItem('mushroom_feedback') || '[]';
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mushroom_game_feedback_${Date.now()}.json`;
+            a.click();
         });
 
+        drawBackground();
+        player.draw();
     </script>
 </body>
 </html>
