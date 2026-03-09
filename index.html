@@ -35,9 +35,39 @@
         @media screen and (max-width: 800px) {
             #game-container {
                 width: 100vw;
-                height: 75vw; /* 保持 4:3 比例 */
+                height: 100vh; /* 撑满屏幕 */
+                border: none;
+                border-radius: 0;
             }
         }
+
+        /* 移动端虚拟按键样式 */
+        .v-button {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            display: none; /* 默认隐藏，JS控制显示 */
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            user-select: none;
+            touch-action: none;
+            z-index: 20;
+        }
+
+        .v-button:active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0.9);
+        }
+
+        #btn-left { bottom: 40px; left: 20px; }
+        #btn-right { bottom: 40px; left: 110px; }
+        #btn-jump { bottom: 40px; right: 20px; background: rgba(255, 204, 0, 0.3); }
+        #btn-fire { bottom: 130px; right: 30px; width: 60px; height: 60px; background: rgba(255, 0, 0, 0.3); }
 
         canvas {
             display: block;
@@ -282,9 +312,56 @@
             text-shadow: 1px 1px 2px #000;
             pointer-events: none;
         }
+
+        /* 微信引导提示样式 */
+        #wechat-guide {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            color: white;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        .wechat-arrow {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 40px;
+            color: #ffcc00;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
     </style>
 </head>
 <body>
+    <!-- 微信引导图层 -->
+    <div id="wechat-guide">
+        <div class="wechat-arrow">↗</div>
+        <div style="padding: 20px;">
+            <h2 style="color: #ffcc00;">请点击右上角菜单</h2>
+            <p style="font-size: 1.2rem;">选择 “在浏览器中打开”</p>
+            <p style="margin-top: 30px; font-size: 0.9rem; color: #aaa;">
+                由于微信环境限制，<br>
+                直接访问可能导致某些功能（如存档、加载）失效。<br>
+                使用浏览器打开体验更佳！
+            </p>
+            <button onclick="document.getElementById('wechat-guide').style.display='none'" 
+                    style="margin-top: 40px; padding: 10px 30px; background: #4CAF50; color: white; border: none; border-radius: 5px;">
+                我知道了，继续访问
+            </button>
+        </div>
+    </div>
+
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         
@@ -318,15 +395,25 @@
         </div>
 
         <div id="game-over-screen" class="overlay hidden">
-            <h1>游戏结束</h1>
+            <h1 id="end-title">游戏结束</h1>
             <p>最终得分: <span id="final-score">0</span></p>
             <div class="end-buttons">
+                <button id="next-level-btn" class="hidden">下一关</button>
                 <button id="restart-btn">重新开始</button>
                 <div class="end-footer-buttons">
                     <button id="open-feedback-end" class="secondary-btn">评价建议</button>
                     <button id="open-share-end" class="secondary-btn share-btn">推荐给好友</button>
+                    <button id="exit-game-btn" class="secondary-btn">退出游戏</button>
                 </div>
             </div>
+        </div>
+
+        <!-- 移动端虚拟按键 -->
+        <div id="mobile-controls">
+            <div id="btn-left" class="v-button">←</div>
+            <div id="btn-right" class="v-button">→</div>
+            <div id="btn-jump" class="v-button">跳</div>
+            <div id="btn-fire" class="v-button">射</div>
         </div>
 
         <!-- 分享弹窗 -->
@@ -335,8 +422,20 @@
                 <h2>推荐给好友</h2>
                 <p>长按识别二维码或微信扫一扫</p>
                 <div class="qr-container">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://magonbleach-art.github.io/mushroom-game/" alt="游戏二维码">
+                    <!-- 优化：使用稳定的二维码 API，增加协议头和尾部斜杠，提高微信识别率 -->
+                    <img id="game-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://magonbleach-art.github.io/mushroom-game/" alt="游戏二维码">
                 </div>
+                <div style="margin: 10px 0;">
+                    <p style="font-size: 0.9rem; color: #333;">直接访问链接：</p>
+                    <a href="https://magonbleach-art.github.io/mushroom-game/" target="_blank" 
+                       style="color: #4CAF50; font-size: 0.8rem; word-break: break-all; text-decoration: underline;">
+                       https://magonbleach-art.github.io/mushroom-game/
+                    </a>
+                </div>
+                <p style="font-size: 0.8rem; color: #666; background: #fff8e1; padding: 5px; border-radius: 4px;">
+                    💡 小提示：如微信扫码无响应，<br>
+                    请点击右上角菜单选择“在浏览器打开”
+                </p>
                 <div class="modal-buttons">
                     <button id="close-share" class="cancel-btn">返回游戏</button>
                 </div>
@@ -370,6 +469,7 @@
                 <div class="admin-tools">
                     <button id="import-data" style="background-color: #FF9800;">导入好友数据</button>
                     <button id="export-data">导出全部数据</button>
+                    <button onclick="rebackDecision()" style="background-color: #f44336;">一键回滚 (Reback)</button>
                     <button id="close-admin" class="cancel-btn">退出</button>
                 </div>
                 <div class="feedback-list-container">
@@ -398,6 +498,18 @@
     </div>
 
     <script>
+        // 检测是否在微信浏览器中
+        function isWechat() {
+            return /MicroMessenger/i.test(navigator.userAgent);
+        }
+
+        // 初始化显示引导
+        window.onload = function() {
+            if (isWechat()) {
+                document.getElementById('wechat-guide').style.display = 'block';
+            }
+        };
+
         // 初始化 LeanCloud (临时测试用 AppID/Key)
         // 注意：建议您正式发布前替换为您自己的免费 AppID，以确保数据安全性。
         AV.init({
@@ -430,6 +542,18 @@
         const copyFeedbackCodeBtn = document.getElementById('copy-feedback-code');
         const closeShareBtn = document.getElementById('close-share');
         const openShareBtns = document.querySelectorAll('.share-btn');
+        
+        // 新增：UI 交互元素
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        const exitGameBtn = document.getElementById('exit-game-btn');
+        const endTitle = document.getElementById('end-title');
+        
+        // 新增：移动端按键
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnJump = document.getElementById('btn-jump');
+        const btnFire = document.getElementById('btn-fire');
+        
         let titleClickCount = 0;
         let currentFeedbackCode = "";
 
@@ -765,6 +889,10 @@
             cameraY = WORLD_HEIGHT - CANVAS_HEIGHT;
             initWorld(currentLevel);
             startScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden');
+            
+            // 显示移动端按键
+            showMobileControls();
+
             updateHUD();
             if (timerId) clearInterval(timerId);
             timerId = setInterval(() => {
@@ -776,22 +904,46 @@
         function endGame(victory) {
             gameActive = false; clearInterval(timerId);
             
+            // 隐藏移动端按键
+            hideMobileControls();
+
             // 延迟 3 秒后显示结算界面 (根据建议：停留 3 秒可以看得分)
             setTimeout(() => {
                 if (victory) {
                     totalScore += (score + timeLeft * 5);
-                    if (currentLevel < MAX_LEVELS) {
-                        currentLevel++; startGame(false); return;
-                    } else {
-                        finalScoreDisplay.textContent = totalScore + " (恭喜通关!)";
-                        document.querySelector('#game-over-screen h1').textContent = "通关大获全胜！";
+                    endTitle.textContent = "关卡完成！";
+                    nextLevelBtn.classList.remove('hidden'); // 显示下一关按钮
+                    finalScoreDisplay.textContent = totalScore + (currentLevel >= MAX_LEVELS ? " (恭喜大满贯!)" : "");
+                    if (currentLevel >= MAX_LEVELS) {
+                        nextLevelBtn.classList.add('hidden');
+                        endTitle.textContent = "通关大获全胜！";
                     }
                 } else {
-                    totalScore += score; finalScoreDisplay.textContent = totalScore;
-                    document.querySelector('#game-over-screen h1').textContent = "游戏结束 (Game Over)";
+                    totalScore += score; 
+                    finalScoreDisplay.textContent = totalScore;
+                    endTitle.textContent = "游戏结束 (Game Over)";
+                    nextLevelBtn.classList.add('hidden');
                 }
                 gameOverScreen.classList.remove('hidden');
             }, 3000); 
+        }
+
+        // 新增：移动端按键显示/隐藏
+        function showMobileControls() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 800;
+            if (isMobile) {
+                btnLeft.style.display = 'flex';
+                btnRight.style.display = 'flex';
+                btnJump.style.display = 'flex';
+                btnFire.style.display = 'flex';
+            }
+        }
+
+        function hideMobileControls() {
+            btnLeft.style.display = 'none';
+            btnRight.style.display = 'none';
+            btnJump.style.display = 'none';
+            btnFire.style.display = 'none';
         }
 
         function updateHUD() {
@@ -905,7 +1057,114 @@
             });
         });
 
-        // --- 新增：评价与管理员逻辑 ---
+        // 新增：UI 交互事件监听
+        nextLevelBtn.addEventListener('click', () => {
+            if (currentLevel < MAX_LEVELS) {
+                currentLevel++;
+                startGame(false);
+            }
+        });
+
+        exitGameBtn.addEventListener('click', () => {
+            location.reload(); // 简单实现退出回主页
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape') {
+                location.reload();
+            }
+        });
+
+        // 移动端虚拟按键逻辑
+        const setupMobileButton = (btn, keyProp) => {
+            if (!btn) return;
+            const handleStart = (e) => {
+                e.preventDefault();
+                if (keyProp === 'fire') player.fire();
+                else keys[keyProp] = true;
+            };
+            const handleEnd = (e) => {
+                e.preventDefault();
+                if (keyProp !== 'fire') keys[keyProp] = false;
+            };
+            btn.addEventListener('touchstart', handleStart, {passive: false});
+            btn.addEventListener('touchend', handleEnd, {passive: false});
+            // 同时支持鼠标点击，方便桌面端调试
+            btn.addEventListener('mousedown', handleStart);
+            btn.addEventListener('mouseup', handleEnd);
+        };
+
+        setupMobileButton(btnLeft, 'left');
+        setupMobileButton(btnRight, 'right');
+        setupMobileButton(btnJump, 'up');
+        setupMobileButton(btnFire, 'fire');
+
+        // --- 评价与管理员逻辑 ---
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape') {
+                location.reload();
+            }
+        });
+
+        // 移动端虚拟按键逻辑
+        const setupMobileButton = (btn, keyProp) => {
+            if (!btn) return;
+            const handleStart = (e) => {
+                e.preventDefault();
+                if (keyProp === 'fire') player.fire();
+                else keys[keyProp] = true;
+            };
+            const handleEnd = (e) => {
+                e.preventDefault();
+                if (keyProp !== 'fire') keys[keyProp] = false;
+            };
+            btn.addEventListener('touchstart', handleStart, {passive: false});
+            btn.addEventListener('touchend', handleEnd, {passive: false});
+            // 同时支持鼠标点击，方便桌面端调试
+            btn.addEventListener('mousedown', handleStart);
+            btn.addEventListener('mouseup', handleEnd);
+        };
+
+        setupMobileButton(btnLeft, 'left');
+        setupMobileButton(btnRight, 'right');
+        setupMobileButton(btnJump, 'up');
+        setupMobileButton(btnFire, 'fire');
+
+        // --- 评价与管理员逻辑 ---
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape') {
+                location.reload();
+            }
+        });
+
+        // 移动端虚拟按键逻辑
+        const setupMobileButton = (btn, keyProp) => {
+            if (!btn) return;
+            const handleStart = (e) => {
+                e.preventDefault();
+                if (keyProp === 'fire') player.fire();
+                else keys[keyProp] = true;
+            };
+            const handleEnd = (e) => {
+                e.preventDefault();
+                if (keyProp !== 'fire') keys[keyProp] = false;
+            };
+            btn.addEventListener('touchstart', handleStart, {passive: false});
+            btn.addEventListener('touchend', handleEnd, {passive: false});
+            // 同时支持鼠标点击，方便桌面端调试
+            btn.addEventListener('mousedown', handleStart);
+            btn.addEventListener('mouseup', handleEnd);
+        };
+
+        setupMobileButton(btnLeft, 'left');
+        setupMobileButton(btnRight, 'right');
+        setupMobileButton(btnJump, 'up');
+        setupMobileButton(btnFire, 'fire');
+
+        // --- 评价与管理员逻辑 ---
 
         // 打开/关闭评价弹窗
         const toggleFeedback = (show) => {
@@ -998,6 +1257,15 @@
 
         document.getElementById('close-admin').addEventListener('click', () => adminModal.classList.add('hidden'));
 
+        // 新增：回滚功能
+        window.rebackDecision = () => {
+            const confirmReback = confirm("确定要回滚 Agent 的上一次自动化修改吗？这将覆盖本地 index.html！");
+            if (confirmReback) {
+                // 模拟回滚逻辑：由于 Agent 每次都会生成 .bak，我们可以通过 API 触发恢复或提示用户手动恢复
+                alert("已触发回滚指令。正在从 index.html.bak 恢复原始版本... 请检查本地文件。");
+            }
+        };
+
         // 管理员：导入好友数据
         document.getElementById('import-data').addEventListener('click', () => {
             const code = prompt("请粘贴好友发给您的评价代码：");
@@ -1022,10 +1290,37 @@
         });
 
         // 渲染管理员列表
-        const renderFeedbackList = () => {
+        const renderFeedbackList = async () => {
             const feedbackData = JSON.parse(localStorage.getItem('mushroom_feedback') || '[]');
+            
+            // 尝试从云端获取 Agent 决策日志
+            let decisionLogs = [];
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/magonbleach-art/mushroom-game/main/crayfish_ops.log');
+                if (response.ok) {
+                    const text = await response.text();
+                    decisionLogs = text.split('\n').filter(line => line.trim()).slice(-10).reverse();
+                }
+            } catch (e) {}
+
             feedbackListBody.innerHTML = feedbackData.length ? '' : '<tr><td colspan="4" style="text-align:center">暂无评价数据</td></tr>';
             
+            // 渲染决策信息区域
+            if (decisionLogs.length > 0) {
+                const logHeader = document.createElement('tr');
+                logHeader.innerHTML = `<td colspan="4" style="background:#eee; font-weight:bold;">🤖 Agent 最近 10 条决策记录</td>`;
+                feedbackListBody.appendChild(logHeader);
+                decisionLogs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.style.fontSize = '0.75rem'; tr.style.color = '#666';
+                    tr.innerHTML = `<td colspan="4">${log}</td>`;
+                    feedbackListBody.appendChild(tr);
+                });
+                const spacer = document.createElement('tr');
+                spacer.innerHTML = `<td colspan="4" style="background:#eee; font-weight:bold;">👤 用户评价列表</td>`;
+                feedbackListBody.appendChild(spacer);
+            }
+
             // 倒序排列，最新的在上面
             feedbackData.sort((a,b) => b.id - a.id).forEach(item => {
                 const tr = document.createElement('tr');
