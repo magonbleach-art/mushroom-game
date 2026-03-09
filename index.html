@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>顶蘑菇小游戏 - 微信分享版</title>
+    <!-- 引入 LeanCloud SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.12.0/dist/av-min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
+            font-family: 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background-color: #87CEEB; /* 天蓝色背景 */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 4px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        /* 微信移动端自适应 */
+        @media screen and (max-width: 800px) {
+            #game-container {
+                width: 100vw;
+                height: 75vw; /* 保持 4:3 比例 */
+            }
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ffcc00;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            max-width: 85%;
+            font-size: 0.9rem;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ffcc00;
+            padding-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .speed-selection {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .speed-selection h3 {
+            font-size: 1rem;
+            color: #ffcc00;
+            margin-bottom: 8px;
+        }
+
+        .speed-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .speed-btn {
+            padding: 6px 12px !important;
+            font-size: 0.9rem !important;
+            background-color: #555 !important;
+            border: 2px solid transparent !important;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .speed-btn.selected {
+            background-color: #ffcc00 !important;
+            color: #000 !important;
+            border: 2px solid #fff !important;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            margin: 5px 0;
+        }
+
+        button#start-btn, button#restart-btn {
+            width: 200px; /* 统一宽度 */
+            padding: 12px 0;
+            font-size: 1.3rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            margin: 5px auto;
+            display: block;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .secondary-btn {
+            width: 200px !important; /* 统一宽度 */
+            background-color: #666 !important;
+            margin-top: 10px;
+            padding: 12px 0 !important; /* 统一内边距 */
+            font-size: 1.1rem !important;
+            display: block;
+            margin: 5px auto;
+        }
+
+        .cancel-btn {
+            background-color: #999 !important;
+        }
+
+        .modal-content, .admin-content {
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            width: 85%;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        .admin-content {
+            max-width: 750px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            height: 80px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .modal-buttons, .admin-tools {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .admin-tools {
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .feedback-list-container {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f8f8;
+            position: sticky;
+            top: 0;
+        }
+
+        .status-select {
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .status-needs-opt { background: #ffebee; color: #c62828; }
+        .status-later-opt { background: #fff3e0; color: #ef6c00; }
+        .status-no-opt { background: #f5f5f5; color: #616161; }
+        .status-done { background: #e8f5e9; color: #2e7d32; }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="start-screen" class="overlay">
+            <h1>顶蘑菇小游戏</h1>
+            <div class="instructions">
+                <h3>操作说明</h3>
+                <ul>
+                    <li><strong>方向键</strong>: 移动/跳跃</li>
+                    <li><strong>F / X 键</strong>: 发射子弹攻击怪物</li>
+                    <li><strong>目标</strong>: 爬 10 层顶旗帜 🚩</li>
+                    <li><strong>得分</strong>: 金币+10，杀怪+5，碰怪-20</li>
+                    <li><strong>技巧</strong>: 边缘跳跃会自动修正，手感更丝滑！</li>
+                </ul>
+            </div>
+            <div class="speed-selection">
+                <h3>选择移动速度</h3>
+                <div class="speed-buttons">
+                    <button class="speed-btn" data-speed="1">1级</button>
+                    <button class="speed-btn" data-speed="2">2级</button>
+                    <button class="speed-btn selected" data-speed="3">3级</button>
+                    <button class="speed-btn" data-speed="4">4级</button>
+                    <button class="speed-btn" data-speed="5">5级</button>
+                </div>
+            </div>
+            <button id="start-btn">开始游戏</button>
+            <button id="open-feedback-start" class="secondary-btn">评价建议</button>
+        </div>
+
+        <div id="game-over-screen" class="overlay hidden">
+            <h1>游戏结束</h1>
+            <p>最终得分: <span id="final-score">0</span></p>
+            <div class="end-buttons">
+                <button id="restart-btn">重新开始</button>
+                <button id="open-feedback-end" class="secondary-btn">评价建议</button>
+            </div>
+        </div>
+
+        <!-- 评价弹窗 -->
+        <div id="feedback-modal" class="overlay hidden">
+            <div class="modal-content">
+                <h2>评价与建议</h2>
+                <div class="form-group">
+                    <label>评价内容:</label>
+                    <textarea id="feedback-content" placeholder="觉得游戏怎么样？"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>改善建议:</label>
+                    <textarea id="feedback-suggest" placeholder="有哪些地方可以改进？"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button id="submit-feedback">提交评价</button>
+                    <button id="copy-feedback-code" class="hidden" style="background-color: #2196F3;">复制评价代码发给管理员</button>
+                    <button id="close-feedback" class="cancel-btn">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理员界面 -->
+        <div id="admin-modal" class="overlay hidden">
+            <div class="admin-content">
+                <h2>后台评价管理 (管理员)</h2>
+                <div class="admin-tools">
+                    <button id="import-data" style="background-color: #FF9800;">导入好友数据</button>
+                    <button id="export-data">导出全部数据</button>
+                    <button id="close-admin" class="cancel-btn">退出</button>
+                </div>
+                <div class="feedback-list-container">
+                    <table id="feedback-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>内容</th>
+                                <th>建议</th>
+                                <th>管理员确认/分类</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-list-body">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="hud">
+            <div id="level-display">第 1 关</div>
+            <div id="score-display">得分: 0</div>
+            <div id="time-display">时间: 60</div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化 LeanCloud (临时测试用 AppID/Key)
+        // 注意：建议您正式发布前替换为您自己的免费 AppID，以确保数据安全性。
+        AV.init({
+            appId: "vBfM3O6U2P8Y9X1Q2W3E4R5T-gzGzoHsz",
+            appKey: "yH8U7I6O5P4L3K2J1H0G9F8D",
+            serverURL: "https://vbfm3o6u.lc-cn-n1-shared.com"
+        });
+
+        // 将所有逻辑合并在此
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const timeDisplay = document.getElementById('time-display');
+        const levelDisplay = document.getElementById('level-display');
+        const speedButtons = document.querySelectorAll('.speed-btn');
+
+        // 新增：评价系统相关元素
+        const feedbackModal = document.getElementById('feedback-modal');
+        const adminModal = document.getElementById('admin-modal');
+        const feedbackContent = document.getElementById('feedback-content');
+        const feedbackSuggest = document.getElementById('feedback-suggest');
+        const feedbackListBody = document.getElementById('feedback-list-body');
+        const submitFeedbackBtn = document.getElementById('submit-feedback');
+        const copyFeedbackCodeBtn = document.getElementById('copy-feedback-code');
+        let titleClickCount = 0;
+        let currentFeedbackCode = "";
+
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 600;
+        const WORLD_HEIGHT = 2200;
+        const GRAVITY = 0.5;
+        const JUMP_FORCE = -14;
+        const BLOCK_SIZE = 40;
+        const GAME_TIME = 120;
+        const MAX_LEVELS = 10;
+        const LAYER_SPACING = 180;
+        const RESPAWN_TIME = 10000;
+
+        const speedSettings = {
+            1: { maxSpeed: 2, accel: 0.3 },
+            2: { maxSpeed: 3.5, accel: 0.5 },
+            3: { maxSpeed: 5, accel: 0.8 },
+            4: { maxSpeed: 6.5, accel: 1.1 },
+            5: { maxSpeed: 8, accel: 1.5 }
+        };
+
+        let PLAYER_MAX_SPEED = 5;
+        let PLAYER_ACCEL = 0.8;
+        let PLAYER_FRICTION = 0.85;
+
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        let currentLevel = 1;
+        let totalScore = 0;
+        let score = 0;
+        let timeLeft = GAME_TIME;
+        let gameActive = false;
+        let timerId = null;
+        let cameraY = 0;
+
+        const keys = { left: false, right: false, up: false, space: false, fire: false };
+
+        class Bullet {
+            constructor(x, y, dir) {
+                this.x = x; this.y = y; this.dir = dir;
+                this.speed = 10; this.width = 10; this.height = 10; this.active = true;
+            }
+            update() {
+                this.x += this.dir * this.speed;
+                if (this.x < 0 || this.x > CANVAS_WIDTH) this.active = false;
+            }
+            draw() {
+                ctx.fillStyle = '#FFFF00';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - cameraY, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Enemy {
+            constructor(x, y, type) {
+                this.startX = x; this.startY = y; this.x = x; this.y = y;
+                this.type = type; this.width = 30; this.height = 30;
+                this.dir = 1; this.speed = 1.5; this.alive = true; this.respawnTimer = 0;
+            }
+            update() {
+                if (!this.alive) {
+                    if (Date.now() > this.respawnTimer) {
+                        this.alive = true; this.x = this.startX; this.y = this.startY;
+                    }
+                    return;
+                }
+                if (this.type === 'turtle') {
+                    this.x += this.dir * this.speed;
+                    if (this.x < 50 || this.x > CANVAS_WIDTH - 80) this.dir *= -1;
+                }
+            }
+            draw() {
+                if (!this.alive) return;
+                const drawY = this.y - cameraY;
+                
+                if (this.type === 'turtle') {
+                    // 绘制乌龟
+                    // 身体
+                    ctx.fillStyle = '#90EE90'; // 浅绿
+                    ctx.fillRect(this.x + 5, drawY + 10, 20, 15);
+                    // 龟壳
+                    ctx.fillStyle = '#006400'; // 深绿
+                    ctx.beginPath();
+                    ctx.ellipse(this.x + 15, drawY + 15, 15, 12, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // 壳纹理
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(this.x + 10, drawY + 10, 10, 10);
+                    // 头部
+                    ctx.fillStyle = '#90EE90';
+                    ctx.fillRect(this.dir > 0 ? this.x + 25 : this.x - 5, drawY + 10, 10, 10);
+                    // 眼睛
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(this.dir > 0 ? this.x + 30 : this.x, drawY + 12, 3, 3);
+                } else {
+                    // 绘制食人花
+                    // 茎
+                    ctx.fillStyle = '#228B22'; // 森林绿
+                    ctx.fillRect(this.x + 12, drawY + 15, 6, 15);
+                    // 叶子
+                    ctx.beginPath();
+                    ctx.ellipse(this.x + 8, drawY + 25, 8, 4, 0.5, 0, Math.PI * 2);
+                    ctx.ellipse(this.x + 22, drawY + 25, 8, 4, -0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    // 花头 (嘴巴)
+                    ctx.fillStyle = '#FF0000';
+                    ctx.beginPath();
+                    ctx.arc(this.x + 15, drawY + 10, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    // 牙齿
+                    ctx.fillStyle = '#fff';
+                    for(let i=0; i<5; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(this.x + 5 + i*5, drawY + 10);
+                        ctx.lineTo(this.x + 7.5 + i*5, drawY + 5);
+                        ctx.lineTo(this.x + 10 + i*5, drawY + 10);
+                        ctx.fill();
+                    }
+                    // 白斑
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.arc(this.x + 10, drawY + 5, 3, 0, Math.PI * 2);
+                    ctx.arc(this.x + 20, drawY + 12, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            die() {
+                this.alive = false;
+                this.respawnTimer = Date.now() + RESPAWN_TIME;
+            }
+        }
+
+        class CoinEffect {
+            constructor(x, y, value, color = '#FFD700') {
+                this.x = x; this.y = y; this.value = value;
+                this.vy = -5; this.opacity = 1; this.life = 60; this.color = color;
+            }
+            update() {
+                this.y += this.vy; this.vy += 0.2; this.life--; this.opacity = this.life / 60;
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.opacity; ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x + 20, this.y - cameraY, 15, 0, Math.PI * 2);
+                ctx.fill(); ctx.fillStyle = '#000'; ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center'; ctx.fillText(this.value, this.x + 20, this.y + 5 - cameraY);
+                ctx.restore();
+            }
+        }
+
+        class Flag {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.width = 60; this.height = 100; this.hit = false;
+            }
+            draw() {
+                ctx.fillStyle = '#333'; ctx.fillRect(this.x, this.y - cameraY, 5, this.height);
+                ctx.fillStyle = this.hit ? '#4CAF50' : '#FF0000';
+                ctx.beginPath(); ctx.moveTo(this.x + 5, this.y - cameraY);
+                ctx.lineTo(this.x + 50, this.y + 25 - cameraY);
+                ctx.lineTo(this.x + 5, this.y + 50 - cameraY);
+                ctx.fill(); ctx.font = '30px Arial'; ctx.fillText('🚩', this.x + 10, this.y + 40 - cameraY);
+            }
+            checkCollision(p) {
+                if (this.hit) return false;
+                if (p.x < this.x + this.width && p.x + p.width > this.x &&
+                    p.y < this.y + this.height && p.y + p.height > this.y) {
+                    this.hit = true; return true;
+                }
+                return false;
+            }
+        }
+
+        const player = {
+            x: 400, y: WORLD_HEIGHT - 100, width: 40, height: 40,
+            vx: 0, vy: 0, onGround: false, lastDir: 1, bullets: [],
+            draw() {
+                const drawY = this.y - cameraY;
+                ctx.fillStyle = '#ff0000'; ctx.fillRect(this.x, drawY + 10, this.width, this.height - 10);
+                ctx.fillStyle = '#0000ff'; ctx.fillRect(this.x, drawY + 25, this.width, 15);
+                ctx.fillStyle = '#ffdbac'; ctx.fillRect(this.x + 5, drawY, 30, 20);
+                ctx.fillStyle = '#ff0000'; ctx.fillRect(this.x + 2, drawY - 5, 36, 8);
+                ctx.fillRect(this.x + 10, drawY - 10, 20, 5);
+                ctx.fillStyle = 'black';
+                ctx.fillRect(this.lastDir > 0 ? this.x + 22 : this.x + 10, drawY + 5, 4, 6);
+                ctx.fillRect(this.lastDir > 0 ? this.x + 28 : this.x + 16, drawY + 5, 4, 6);
+                ctx.fillStyle = '#4b2e1e';
+                ctx.fillRect(this.lastDir > 0 ? this.x + 20 : this.x + 8, drawY + 15, 12, 3);
+                this.bullets.forEach(b => b.draw());
+            },
+            update() {
+                if (keys.left) { this.vx -= PLAYER_ACCEL; this.lastDir = -1; }
+                else if (keys.right) { this.vx += PLAYER_ACCEL; this.lastDir = 1; }
+                else { this.vx *= PLAYER_FRICTION; }
+                if (this.vx > PLAYER_MAX_SPEED) this.vx = PLAYER_MAX_SPEED;
+                if (this.vx < -PLAYER_MAX_SPEED) this.vx = -PLAYER_MAX_SPEED;
+                if (Math.abs(this.vx) < 0.1) this.vx = 0;
+                this.x += this.vx;
+                if ((keys.up || keys.space) && this.onGround) { this.vy = JUMP_FORCE; this.onGround = false; }
+                this.vy += GRAVITY; this.y += this.vy;
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > CANVAS_WIDTH) this.x = CANVAS_WIDTH - this.width;
+                const targetCameraY = this.y - CANVAS_HEIGHT * 0.7;
+                cameraY += (targetCameraY - cameraY) * 0.1;
+                cameraY = Math.max(0, Math.min(cameraY, WORLD_HEIGHT - CANVAS_HEIGHT));
+                this.bullets.forEach((b, i) => { b.update(); if (!b.active) this.bullets.splice(i, 1); });
+            },
+            fire() {
+                if (this.bullets.length < 3) {
+                    this.bullets.push(new Bullet(this.x + this.width / 2, this.y + this.height / 2, this.lastDir));
+                }
+            }
+        };
+
+        class Block {
+            constructor(x, y) { this.x = x; this.y = y; this.width = BLOCK_SIZE; this.height = BLOCK_SIZE; this.hit = false; this.hitTimer = 0; }
+            draw() {
+                let drawY = this.y - cameraY;
+                if (this.hit) {
+                    ctx.fillStyle = '#8B4513';
+                    const offset = Math.sin(this.hitTimer * 0.2) * 5;
+                    ctx.fillRect(this.x, drawY - offset, this.width, this.height);
+                    this.hitTimer--;
+                } else {
+                    ctx.fillStyle = '#FFA500'; ctx.fillRect(this.x, drawY, this.width, this.height);
+                    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(this.x, drawY, this.width, this.height);
+                    ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.fillText('?', this.x + 14, drawY + 28);
+                }
+            }
+            checkCollision(p) {
+                const tolerance = 12;
+                if (p.x < this.x + this.width && p.x + p.width > this.x &&
+                    p.y < this.y + this.height && p.y + p.height > this.y) {
+                    if (p.vy < 0 && p.y > this.y + this.height - 20) {
+                        const overlapLeft = (p.x + p.width) - this.x;
+                        const overlapRight = (this.x + this.width) - p.x;
+                        if (overlapLeft < tolerance) { p.x -= overlapLeft; return null; }
+                        else if (overlapRight < tolerance) { p.x += overlapRight; return null; }
+                        p.y = this.y + this.height; p.vy = 2;
+                        if (!this.hit) { this.hit = true; this.hitTimer = 20; return "hit_bottom"; }
+                    } else if (p.vy > 0 && p.y + p.height < this.y + 20) {
+                        p.y = this.y - p.height; p.vy = 0; p.onGround = true; return "on_top";
+                    } else {
+                        if (p.x < this.x) p.x = this.x - p.width; else p.x = this.x + this.width;
+                    }
+                }
+                return null;
+            }
+        }
+
+        let blocks = [], enemies = [], coins = [], flag = null;
+
+        function initWorld(level) {
+            blocks = []; enemies = []; coins = [];
+            const seed = level * 123.456;
+            const random = (s) => { const x = Math.sin(s) * 10000; return x - Math.floor(x); };
+            const numLayers = 10;
+            const gridCount = Math.floor(CANVAS_WIDTH / BLOCK_SIZE);
+            for (let layer = 0; layer < numLayers; layer++) {
+                const layerY = WORLD_HEIGHT - 200 - (layer * LAYER_SPACING);
+                const blocksInLayer = Math.max(5, 12 - level);
+                let occupiedSlots = new Set(), layerBlocks = [];
+                let attempts = 0;
+                while (layerBlocks.length < blocksInLayer && attempts < 100) {
+                    let slot = Math.floor(random(seed + layer * 30 + attempts) * gridCount);
+                    if (!occupiedSlots.has(slot)) {
+                        occupiedSlots.add(slot);
+                        const newBlock = new Block(slot * BLOCK_SIZE, layerY);
+                        layerBlocks.push(newBlock); blocks.push(newBlock);
+                    }
+                    attempts++;
+                }
+                if (layer > 0 && layerBlocks.length > 0) {
+                    const randomIdx = Math.floor(random(seed + layer * 50) * layerBlocks.length);
+                    const enemyBlock = layerBlocks[randomIdx];
+                    const enemyType = random(seed + layer * 60) > 0.5 ? 'turtle' : 'piranha';
+                    enemies.push(new Enemy(enemyBlock.x + 5, layerY - 30, enemyType));
+                }
+            }
+            const topLayerY = WORLD_HEIGHT - 200 - ((numLayers - 1) * LAYER_SPACING);
+            flag = new Flag(CANVAS_WIDTH / 2 - 30, topLayerY - 120);
+        }
+
+        function startGame(isNewGame = true) {
+            if (isNewGame) { currentLevel = 1; totalScore = 0; }
+            score = 0; timeLeft = GAME_TIME; gameActive = true;
+            player.x = 400; player.y = WORLD_HEIGHT - 100; player.vx = 0; player.vy = 0; player.bullets = [];
+            cameraY = WORLD_HEIGHT - CANVAS_HEIGHT;
+            initWorld(currentLevel);
+            startScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden');
+            updateHUD();
+            if (timerId) clearInterval(timerId);
+            timerId = setInterval(() => {
+                if (gameActive) { timeLeft--; updateHUD(); if (timeLeft <= 0) endGame(false); }
+            }, 1000);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame(victory) {
+            gameActive = false; clearInterval(timerId);
+            if (victory) {
+                totalScore += (score + timeLeft * 5);
+                if (currentLevel < MAX_LEVELS) {
+                    currentLevel++; setTimeout(() => startGame(false), 500); return;
+                } else {
+                    finalScoreDisplay.textContent = totalScore + " (恭喜通关!)";
+                    document.querySelector('#game-over-screen h1').textContent = "通关大获全胜！";
+                }
+            } else {
+                totalScore += score; finalScoreDisplay.textContent = totalScore;
+                document.querySelector('#game-over-screen h1').textContent = "游戏结束";
+            }
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function updateHUD() {
+            scoreDisplay.textContent = `得分: ${totalScore + score}`;
+            timeDisplay.textContent = `时间: ${timeLeft}`;
+            levelDisplay.textContent = `第 ${currentLevel} 关`;
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#556B2F'; ctx.fillRect(0, WORLD_HEIGHT - 40 - cameraY, CANVAS_WIDTH, 40);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            for(let i=0; i<20; i++) { ctx.fillRect((i * 300) % CANVAS_WIDTH, WORLD_HEIGHT - (i * 100) - 200 - cameraY, 100, 20); }
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            drawBackground(); player.update();
+            if (player.y + player.height >= WORLD_HEIGHT - 40) {
+                if (player.vy >= 0) { player.y = WORLD_HEIGHT - 40 - player.height; player.vy = 0; player.onGround = true; }
+            } else player.onGround = false;
+            blocks.forEach(block => {
+                const col = block.checkCollision(player);
+                if (col === "hit_bottom") {
+                    score += 10; updateHUD(); coins.push(new CoinEffect(block.x, block.y - 20, "10"));
+                    enemies.forEach(e => { if (e.alive && Math.abs(e.x - block.x) < 40 && Math.abs(e.y - (block.y - 30)) < 10) { e.die(); score += 5; coins.push(new CoinEffect(e.x, e.y, "+5", "#00FF00")); } });
+                }
+            });
+            enemies.forEach(e => {
+                e.update(); e.draw(); if (!e.alive) return;
+                
+                // 碰撞检测
+                if (player.x < e.x + e.width && player.x + player.width > e.x && 
+                    player.y < e.y + e.height && player.y + player.height > e.y) {
+                    
+                    // 只有乌龟 (turtle) 可以从上方踩死
+                    if (e.type === 'turtle' && player.vy > 0 && player.y + player.height < e.y + 15) {
+                        e.die(); 
+                        player.vy = -8; 
+                        score += 5; 
+                        updateHUD(); 
+                        coins.push(new CoinEffect(e.x, e.y, "+5", "#00FF00"));
+                    } else {
+                        // 食人花不可踩，或者碰到怪物的其他位置
+                        score -= 20; 
+                        updateHUD(); 
+                        coins.push(new CoinEffect(player.x, player.y, "-20", "#FF0000")); 
+                        player.vy = -10; 
+                        player.vx = (player.x < e.x ? -1 : 1) * 10;
+                    }
+                }
+                player.bullets.forEach(b => { if (b.active && b.x < e.x + e.width && b.x + b.width > e.x && b.y - cameraY < (e.y - cameraY) + e.height && (b.y - cameraY) + b.height > (e.y - cameraY)) { e.die(); b.active = false; score += 5; updateHUD(); coins.push(new CoinEffect(e.x, e.y, "+5", "#00FF00")); } });
+            });
+            for (let i = coins.length - 1; i >= 0; i--) { coins[i].update(); coins[i].draw(); if (coins[i].life <= 0) coins.splice(i, 1); }
+            if (flag) { flag.draw(); if (flag.checkCollision(player)) { score += 100; updateHUD(); setTimeout(() => endGame(true), 1000); } }
+            blocks.forEach(block => block.draw()); player.draw(); requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'ArrowLeft') keys.left = true;
+            if (e.code === 'ArrowRight') keys.right = true;
+            if (e.code === 'ArrowUp' || e.code === 'Space') keys.up = true;
+            if (e.code === 'KeyF' || e.code === 'KeyX') player.fire();
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft') keys.left = false;
+            if (e.code === 'ArrowRight') keys.right = false;
+            if (e.code === 'ArrowUp' || e.code === 'Space') keys.up = false;
+        });
+
+        // 移动端触摸支持
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            // 简单的触摸区域划分
+            if (touchY < rect.height / 3) {
+                player.fire();
+            } else if (touchX < rect.width / 3) {
+                keys.left = true;
+            } else if (touchX > (rect.width / 3) * 2) {
+                keys.right = true;
+            } else {
+                keys.up = true;
+            }
+        }, {passive: false});
+
+        canvas.addEventListener('touchend', (e) => {
+            keys.left = keys.right = keys.up = false;
+        }, {passive: false});
+
+        startBtn.addEventListener('click', () => startGame(true));
+        restartBtn.addEventListener('click', () => startGame(true));
+
+        speedButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                speedButtons.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                const level = parseInt(btn.dataset.speed);
+                PLAYER_MAX_SPEED = speedSettings[level].maxSpeed;
+                PLAYER_ACCEL = speedSettings[level].accel;
+            });
+        });
+
+        // --- 新增：评价与管理员逻辑 ---
+
+        // 打开/关闭评价弹窗
+        const toggleFeedback = (show) => {
+            feedbackModal.classList.toggle('hidden', !show);
+            if(show) {
+                feedbackContent.value = '';
+                feedbackSuggest.value = '';
+                submitFeedbackBtn.classList.remove('hidden');
+                copyFeedbackCodeBtn.classList.add('hidden');
+            }
+        };
+
+        document.getElementById('open-feedback-start').addEventListener('click', () => toggleFeedback(true));
+        document.getElementById('open-feedback-end').addEventListener('click', () => toggleFeedback(true));
+        document.getElementById('close-feedback').addEventListener('click', () => toggleFeedback(false));
+
+        // 提交评价并生成代码
+        submitFeedbackBtn.addEventListener('click', async () => {
+            const content = feedbackContent.value.trim();
+            const suggest = feedbackSuggest.value.trim();
+            if(!content && !suggest) return alert('请输入内容或建议');
+
+            const item = {
+                id: Date.now(),
+                date: new Date().toLocaleString(),
+                content: content,
+                suggest: suggest,
+                status: 'pending'
+            };
+
+            // 1. 本地存储 (备份)
+            const feedbackData = JSON.parse(localStorage.getItem('mushroom_feedback') || '[]');
+            feedbackData.push(item);
+            localStorage.setItem('mushroom_feedback', JSON.stringify(feedbackData));
+            
+            // 2. 全自动云端同步 (ntfy.sh 方案)
+            try {
+                // 使用 fetch 发送到公开的 Webhook
+                await fetch('https://ntfy.sh/trae_mushroom_jibin_2026', {
+                    method: 'POST',
+                    body: JSON.stringify(item),
+                    headers: {
+                        'Title': '新游戏评价',
+                        'Tags': 'star2,mushroom'
+                    }
+                });
+                console.log('自动同步成功');
+            } catch (error) {
+                console.error('自动同步失败:', error);
+            }
+
+            // 3. 生成代码 (手动备份)
+            currentFeedbackCode = btoa(unescape(encodeURIComponent(JSON.stringify(item))));
+            
+            submitFeedbackBtn.classList.add('hidden');
+            copyFeedbackCodeBtn.classList.remove('hidden');
+            alert('评价已自动同步！管理员将立即收到通知。');
+        });
+
+        // 复制评价代码
+        copyFeedbackCodeBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(currentFeedbackCode).then(() => {
+                alert('评价代码已复制到剪贴板，请去微信粘贴发送给管理员！');
+                toggleFeedback(false);
+            });
+        });
+
+        // 秘密入口：连续点击标题 5 次进入管理员界面
+        document.querySelector('#start-screen h1').addEventListener('click', () => {
+            titleClickCount++;
+            if(titleClickCount >= 5) {
+                titleClickCount = 0;
+                openAdmin();
+            }
+        });
+
+        const openAdmin = () => {
+            adminModal.classList.remove('hidden');
+            renderFeedbackList();
+        };
+
+        document.getElementById('close-admin').addEventListener('click', () => adminModal.classList.add('hidden'));
+
+        // 管理员：导入好友数据
+        document.getElementById('import-data').addEventListener('click', () => {
+            const code = prompt("请粘贴好友发给您的评价代码：");
+            if (!code) return;
+            
+            try {
+                const item = JSON.parse(decodeURIComponent(escape(atob(code))));
+                const feedbackData = JSON.parse(localStorage.getItem('mushroom_feedback') || '[]');
+                
+                // 检查是否已存在
+                if (feedbackData.some(i => i.id === item.id)) {
+                    return alert("该评价已在列表中，无需重复导入。");
+                }
+                
+                feedbackData.push(item);
+                localStorage.setItem('mushroom_feedback', JSON.stringify(feedbackData));
+                renderFeedbackList();
+                alert("导入成功！");
+            } catch (e) {
+                alert("无效的代码，请确保完整粘贴了好友发送的内容。");
+            }
+        });
+
+        // 渲染管理员列表
+        const renderFeedbackList = () => {
+            const feedbackData = JSON.parse(localStorage.getItem('mushroom_feedback') || '[]');
+            feedbackListBody.innerHTML = feedbackData.length ? '' : '<tr><td colspan="4" style="text-align:center">暂无评价数据</td></tr>';
+            
+            // 倒序排列，最新的在上面
+            feedbackData.sort((a,b) => b.id - a.id).forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.content}</td>
+                    <td>${item.suggest}</td>
+                    <td>
+                        <select class="status-select" onchange="updateFeedbackStatus(${item.id}, this.value)">
+                            <option value="pending" ${item.status === 'pending' ? 'selected' : ''}>待确认</option>
+                            <option value="optimize" ${item.status === 'optimize' ? 'selected' : ''}>✅ 确认优化</option>
+                            <option value="later" ${item.status === 'later' ? 'selected' : ''}>⏳ 后续优化</option>
+                            <option value="none" ${item.status === 'none' ? 'selected' : ''}>❌ 暂不优化</option>
+                            <option value="done" ${item.status === 'done' ? 'selected' : ''}>✨ 已完成</option>
+                        </select>
+                    </td>
+                `;
+                feedbackListBody.appendChild(tr);
+            });
+        };
+
+        // 全局函数供 select 调用
+        window.updateFeedbackStatus = (id, newStatus) => {
+            const feedbackData = JSON.parse(localStorage.getItem('mushroom_feedback') || '[]');
+            const index = feedbackData.findIndex(i => i.id === id);
+            if(index !== -1) {
+                feedbackData[index].status = newStatus;
+                localStorage.setItem('mushroom_feedback', JSON.stringify(feedbackData));
+            }
+        };
+
+        // 导出数据
+        document.getElementById('export-data').addEventListener('click', () => {
+            const data = localStorage.getItem('mushroom_feedback') || '[]';
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mushroom_game_feedback_${Date.now()}.json`;
+            a.click();
+        });
+
+        drawBackground();
+        player.draw();
+    </script>
+</body>
+</html>
