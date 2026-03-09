@@ -615,12 +615,28 @@
                 this.x = x; this.y = y; this.width = 60; this.height = 100; this.hit = false;
             }
             draw() {
-                ctx.fillStyle = '#333'; ctx.fillRect(this.x, this.y - cameraY, 5, this.height);
+                const drawY = this.y - cameraY;
+                // 旗杆
+                ctx.fillStyle = '#333';
+                ctx.fillRect(this.x, drawY, 5, this.height);
+                
+                // 旗帜 (优化视觉：去掉 Emoji 重叠，改为精致的 Canvas 绘制)
                 ctx.fillStyle = this.hit ? '#4CAF50' : '#FF0000';
-                ctx.beginPath(); ctx.moveTo(this.x + 5, this.y - cameraY);
-                ctx.lineTo(this.x + 50, this.y + 25 - cameraY);
-                ctx.lineTo(this.x + 5, this.y + 50 - cameraY);
-                ctx.fill(); ctx.font = '30px Arial'; ctx.fillText('🚩', this.x + 10, this.y + 40 - cameraY);
+                ctx.beginPath();
+                ctx.moveTo(this.x + 5, drawY);
+                ctx.lineTo(this.x + 55, drawY + 25);
+                ctx.lineTo(this.x + 5, drawY + 50);
+                ctx.fill();
+                
+                // 增加旗帜阴影/纹理
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(this.x + 5, drawY + 20, 40, 5);
+                
+                // 旗杆顶端球
+                ctx.fillStyle = '#DA70D6';
+                ctx.beginPath();
+                ctx.arc(this.x + 2.5, drawY, 5, 0, Math.PI * 2);
+                ctx.fill();
             }
             checkCollision(p) {
                 if (this.hit) return false;
