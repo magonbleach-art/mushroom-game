@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "name": "mushroom-game",
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html",
+      "headers": {
+        "cache-control": "s-maxage=60, stale-while-revalidate"
+      }
+    }
+  ]
+}
