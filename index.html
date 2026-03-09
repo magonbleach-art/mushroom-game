@@ -162,7 +162,7 @@
             background-color: #999 !important;
         }
 
-        .modal-content, .admin-content {
+        .modal-content, .admin-content, .share-content {
             background: #fff;
             color: #333;
             padding: 20px;
@@ -170,6 +170,27 @@
             width: 85%;
             max-width: 500px;
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .share-content h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+
+        .qr-container {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: inline-block;
+            border: 1px solid #eee;
+        }
+
+        .qr-container img {
+            display: block;
+            width: 200px;
+            height: 200px;
         }
 
         .admin-content {
@@ -290,7 +311,10 @@
                 </div>
             </div>
             <button id="start-btn">开始游戏</button>
-            <button id="open-feedback-start" class="secondary-btn">评价建议</button>
+            <div class="start-footer-buttons">
+                <button id="open-feedback-start" class="secondary-btn">评价建议</button>
+                <button id="open-share-btn" class="secondary-btn share-btn">推荐给好友</button>
+            </div>
         </div>
 
         <div id="game-over-screen" class="overlay hidden">
@@ -298,7 +322,24 @@
             <p>最终得分: <span id="final-score">0</span></p>
             <div class="end-buttons">
                 <button id="restart-btn">重新开始</button>
-                <button id="open-feedback-end" class="secondary-btn">评价建议</button>
+                <div class="end-footer-buttons">
+                    <button id="open-feedback-end" class="secondary-btn">评价建议</button>
+                    <button id="open-share-end" class="secondary-btn share-btn">推荐给好友</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分享弹窗 -->
+        <div id="share-modal" class="overlay hidden">
+            <div class="modal-content share-content">
+                <h2>推荐给好友</h2>
+                <p>长按识别二维码或微信扫一扫</p>
+                <div class="qr-container">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://magonbleach-art.github.io/mushroom-game/" alt="游戏二维码">
+                </div>
+                <div class="modal-buttons">
+                    <button id="close-share" class="cancel-btn">返回游戏</button>
+                </div>
             </div>
         </div>
 
@@ -380,12 +421,15 @@
 
         // 新增：评价系统相关元素
         const feedbackModal = document.getElementById('feedback-modal');
+        const shareModal = document.getElementById('share-modal');
         const adminModal = document.getElementById('admin-modal');
         const feedbackContent = document.getElementById('feedback-content');
         const feedbackSuggest = document.getElementById('feedback-suggest');
         const feedbackListBody = document.getElementById('feedback-list-body');
         const submitFeedbackBtn = document.getElementById('submit-feedback');
         const copyFeedbackCodeBtn = document.getElementById('copy-feedback-code');
+        const closeShareBtn = document.getElementById('close-share');
+        const openShareBtns = document.querySelectorAll('.share-btn');
         let titleClickCount = 0;
         let currentFeedbackCode = "";
 
@@ -824,6 +868,12 @@
         document.getElementById('open-feedback-start').addEventListener('click', () => toggleFeedback(true));
         document.getElementById('open-feedback-end').addEventListener('click', () => toggleFeedback(true));
         document.getElementById('close-feedback').addEventListener('click', () => toggleFeedback(false));
+
+        // 打开/关闭分享弹窗
+        openShareBtns.forEach(btn => {
+            btn.addEventListener('click', () => shareModal.classList.remove('hidden'));
+        });
+        closeShareBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
 
         // 提交评价并生成代码
         submitFeedbackBtn.addEventListener('click', async () => {
