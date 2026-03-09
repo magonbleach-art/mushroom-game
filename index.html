@@ -439,7 +439,7 @@
         const GRAVITY = 0.5;
         const JUMP_FORCE = -14;
         const BLOCK_SIZE = 40;
-        const GAME_TIME = 120;
+        const GAME_TIME = 60; // 根据建议由 120 改为 60
         const MAX_LEVELS = 10;
         const LAYER_SPACING = 180;
         const RESPAWN_TIME = 10000;
@@ -732,25 +732,35 @@
 
         function endGame(victory) {
             gameActive = false; clearInterval(timerId);
-            if (victory) {
-                totalScore += (score + timeLeft * 5);
-                if (currentLevel < MAX_LEVELS) {
-                    currentLevel++; setTimeout(() => startGame(false), 500); return;
+            
+            // 延迟 3 秒后显示结算界面 (根据建议：停留 3 秒可以看得分)
+            setTimeout(() => {
+                if (victory) {
+                    totalScore += (score + timeLeft * 5);
+                    if (currentLevel < MAX_LEVELS) {
+                        currentLevel++; startGame(false); return;
+                    } else {
+                        finalScoreDisplay.textContent = totalScore + " (恭喜通关!)";
+                        document.querySelector('#game-over-screen h1').textContent = "通关大获全胜！";
+                    }
                 } else {
-                    finalScoreDisplay.textContent = totalScore + " (恭喜通关!)";
-                    document.querySelector('#game-over-screen h1').textContent = "通关大获全胜！";
+                    totalScore += score; finalScoreDisplay.textContent = totalScore;
+                    document.querySelector('#game-over-screen h1').textContent = "游戏结束 (Game Over)";
                 }
-            } else {
-                totalScore += score; finalScoreDisplay.textContent = totalScore;
-                document.querySelector('#game-over-screen h1').textContent = "游戏结束";
-            }
-            gameOverScreen.classList.remove('hidden');
+                gameOverScreen.classList.remove('hidden');
+            }, 3000); 
         }
 
         function updateHUD() {
-            scoreDisplay.textContent = `得分: ${totalScore + score}`;
+            const currentTotal = totalScore + score;
+            scoreDisplay.textContent = `得分: ${currentTotal}`;
             timeDisplay.textContent = `时间: ${timeLeft}`;
             levelDisplay.textContent = `第 ${currentLevel} 关`;
+
+            // 建议：如果总分数小于 0，则游戏结束 (Game Over)
+            if (currentTotal < 0 && gameActive) {
+                endGame(false);
+            }
         }
 
         function drawBackground() {
@@ -991,29 +1001,21 @@
             });
         };
 
-        // 全局函数供 select 调用
         window.updateFeedbackStatus = (id, newStatus) => {
             const feedbackData = JSON.parse(localStorage.getItem('mushroom_feedback') || '[]');
             const index = feedbackData.findIndex(i => i.id === id);
-            if(index !== -1) {
+            if (index !== -1) {
                 feedbackData[index].status = newStatus;
                 localStorage.setItem('mushroom_feedback', JSON.stringify(feedbackData));
+                renderFeedbackList();
             }
         };
 
-        // 导出数据
-        document.getElementById('export-data').addEventListener('click', () => {
-            const data = localStorage.getItem('mushroom_feedback') || '[]';
-            const blob = new Blob([data], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mushroom_game_feedback_${Date.now()}.json`;
-            a.click();
+        // 页面加载时同步
+        window.addEventListener('load', () => {
+            // 这里可以添加从云端拉取数据的逻辑
         });
 
-        drawBackground();
-        player.draw();
     </script>
 </body>
 </html>
