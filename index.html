@@ -422,14 +422,14 @@
                 <h2>推荐给好友</h2>
                 <p>长按识别二维码或微信扫一扫</p>
                 <div class="qr-container">
-                    <!-- 优化：使用稳定的二维码 API，增加协议头和尾部斜杠，提高微信识别率 -->
-                    <img id="game-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://magonbleach-art.github.io/mushroom-game/" alt="游戏二维码">
+                    <!-- 优化：使用稳定的二维码 API，指向加速后的 Vercel 链接 -->
+                    <img id="game-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://mushroom-game-six.vercel.app/" alt="游戏二维码">
                 </div>
                 <div style="margin: 10px 0;">
-                    <p style="font-size: 0.9rem; color: #333;">直接访问链接：</p>
-                    <a href="https://magonbleach-art.github.io/mushroom-game/" target="_blank" 
+                    <p style="font-size: 0.9rem; color: #333;">国内移动端加速链接：</p>
+                    <a href="https://mushroom-game-six.vercel.app/" target="_blank" 
                        style="color: #4CAF50; font-size: 0.8rem; word-break: break-all; text-decoration: underline;">
-                       https://magonbleach-art.github.io/mushroom-game/
+                       https://mushroom-game-six.vercel.app/
                     </a>
                 </div>
                 <p style="font-size: 0.8rem; color: #666; background: #fff8e1; padding: 5px; border-radius: 4px;">
@@ -1068,71 +1068,6 @@
         exitGameBtn.addEventListener('click', () => {
             location.reload(); // 简单实现退出回主页
         });
-
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Escape') {
-                location.reload();
-            }
-        });
-
-        // 移动端虚拟按键逻辑
-        const setupMobileButton = (btn, keyProp) => {
-            if (!btn) return;
-            const handleStart = (e) => {
-                e.preventDefault();
-                if (keyProp === 'fire') player.fire();
-                else keys[keyProp] = true;
-            };
-            const handleEnd = (e) => {
-                e.preventDefault();
-                if (keyProp !== 'fire') keys[keyProp] = false;
-            };
-            btn.addEventListener('touchstart', handleStart, {passive: false});
-            btn.addEventListener('touchend', handleEnd, {passive: false});
-            // 同时支持鼠标点击，方便桌面端调试
-            btn.addEventListener('mousedown', handleStart);
-            btn.addEventListener('mouseup', handleEnd);
-        };
-
-        setupMobileButton(btnLeft, 'left');
-        setupMobileButton(btnRight, 'right');
-        setupMobileButton(btnJump, 'up');
-        setupMobileButton(btnFire, 'fire');
-
-        // --- 评价与管理员逻辑 ---
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Escape') {
-                location.reload();
-            }
-        });
-
-        // 移动端虚拟按键逻辑
-        const setupMobileButton = (btn, keyProp) => {
-            if (!btn) return;
-            const handleStart = (e) => {
-                e.preventDefault();
-                if (keyProp === 'fire') player.fire();
-                else keys[keyProp] = true;
-            };
-            const handleEnd = (e) => {
-                e.preventDefault();
-                if (keyProp !== 'fire') keys[keyProp] = false;
-            };
-            btn.addEventListener('touchstart', handleStart, {passive: false});
-            btn.addEventListener('touchend', handleEnd, {passive: false});
-            // 同时支持鼠标点击，方便桌面端调试
-            btn.addEventListener('mousedown', handleStart);
-            btn.addEventListener('mouseup', handleEnd);
-        };
-
-        setupMobileButton(btnLeft, 'left');
-        setupMobileButton(btnRight, 'right');
-        setupMobileButton(btnJump, 'up');
-        setupMobileButton(btnFire, 'fire');
-
-        // --- 评价与管理员逻辑 ---
 
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Escape') {
