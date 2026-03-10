@@ -93,13 +93,42 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             color: white;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto; /* 允许内容过多时滚动，防止消失 */
+        }
+
+        #start-screen {
+            padding-top: 40px; /* 为顶部留出空间 */
+        }
+
+        #start-screen h1 {
+            font-size: 2rem;
+            margin: 5px 0;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            max-width: 90%;
+            font-size: 0.8rem;
+        }
+
+        .speed-selection {
+            margin-bottom: 10px;
+        }
+
+        button#start-btn {
+            transform: scale(0.9); /* 稍微缩小启动按钮 */
         }
 
         .hidden {
@@ -387,9 +416,9 @@
         <canvas id="gameCanvas"></canvas>
         
         <div id="start-screen" class="overlay">
-            <div style="font-size: 80px; margin-bottom: 10px;">🐎</div>
+            <div style="font-size: 60px; margin-bottom: 5px;">🐎</div>
             <h1>顶蘑菇小游戏</h1>
-            <p style="color: #ffcc00; font-weight: bold; margin-bottom: 10px;">✨ 2026 马年特别版 ✨</p>
+            <p style="color: #ffcc00; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">✨ 2026 马年特别版 ✨</p>
             <div class="instructions">
                 <h3>操作说明</h3>
                 <ul>
