@@ -97,19 +97,27 @@
             color: white;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* 改为从顶部开始，防止 center 裁剪顶部 */
+            justify-content: flex-start;
             align-items: center;
             z-index: 10;
-            padding: 40px 20px; /* 增加顶部内边距，确保马头可见 */
+            padding: 80px 20px 40px; /* 大幅增加顶部内边距至 80px */
             box-sizing: border-box;
             overflow-y: auto;
         }
 
-        /* PC 端保持居中感，但通过 padding 留白 */
-        @media screen and (min-height: 650px) {
+        /* 专门为 UI 装饰增加的样式 */
+        .ui-decoration {
+            font-size: 60px;
+            line-height: 1; /* 强制行高为 1，防止 Emoji 上浮裁剪 */
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        /* PC 端大窗口保持内容在中间 */
+        @media screen and (min-height: 750px) {
             .overlay {
                 justify-content: center;
-                padding-top: 20px;
+                padding-top: 40px;
             }
         }
 
@@ -420,9 +428,9 @@
         <canvas id="gameCanvas"></canvas>
         
         <div id="start-screen" class="overlay">
-            <div style="font-size: 60px; margin-bottom: 5px;">🐎</div>
+            <div class="ui-decoration">🐎</div>
             <h1>顶蘑菇小游戏</h1>
-            <p style="color: #ffcc00; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">✨ 2026 马年特别版 ✨</p>
+            <p class="theme-text" style="color: #ffcc00; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">✨ 2026 马年特别版 ✨</p>
             <div class="instructions">
                 <h3>操作说明</h3>
                 <ul>
