@@ -68,10 +68,10 @@
         }
 
         /* 默认竖屏位置 */
-        #btn-left { bottom: 50px; left: 20px; }
-        #btn-right { bottom: 50px; left: 120px; }
-        #btn-jump { bottom: 50px; right: 20px; width: 90px; height: 90px; background: rgba(76, 175, 80, 0.3); font-size: 24px; }
-        #btn-fire { bottom: 160px; right: 30px; width: 70px; height: 70px; background: rgba(244, 67, 54, 0.3); }
+        #btn-left { bottom: 50px; left: 10px; width: 100px; height: 100px; font-size: 30px; }
+        #btn-right { bottom: 50px; left: 130px; width: 100px; height: 100px; font-size: 30px; }
+        #btn-jump { bottom: 50px; right: 20px; width: 100px; height: 100px; background: rgba(76, 175, 80, 0.3); font-size: 24px; }
+        #btn-fire { bottom: 170px; right: 30px; width: 70px; height: 70px; background: rgba(244, 67, 54, 0.3); }
 
         /* 横屏模式自动调整位置 */
         @media screen and (orientation: landscape) {
@@ -638,6 +638,9 @@
         let PLAYER_MAX_SPEED = 5;
         let PLAYER_ACCEL = 0.8;
         let PLAYER_FRICTION = 0.85;
+        let invincible = false;
+        let invincibleTimer = 0;
+        const INVINCIBLE_DURATION = 1000; // 1秒无敌时间
 
         canvas.width = CANVAS_WIDTH;
         canvas.height = CANVAS_HEIGHT;
@@ -836,6 +839,7 @@
             vx: 0, vy: 0, onGround: false, lastDir: 1, bullets: [],
             draw() {
                 const drawY = this.y - cameraY;
+                if (invincible && Math.floor(Date.now() / 100) % 2 === 0) return; // 闪烁效果
                 ctx.fillStyle = '#ff0000'; ctx.fillRect(this.x, drawY + 10, this.width, this.height - 10);
                 ctx.fillStyle = '#0000ff'; ctx.fillRect(this.x, drawY + 25, this.width, 15);
                 ctx.fillStyle = '#ffdbac'; ctx.fillRect(this.x + 5, drawY, 30, 20);
@@ -849,6 +853,9 @@
                 this.bullets.forEach(b => b.draw());
             },
             update() {
+                if (invincible && Date.now() > invincibleTimer) {
+                    invincible = false;
+                }
                 if (keys.left) { this.vx -= PLAYER_ACCEL; this.lastDir = -1; }
                 else if (keys.right) { this.vx += PLAYER_ACCEL; this.lastDir = 1; }
                 else { this.vx *= PLAYER_FRICTION; }
@@ -1041,7 +1048,7 @@
                 e.update(); e.draw(); if (!e.alive) return;
                 
                 // 碰撞检测
-                if (player.x < e.x + e.width && player.x + player.width > e.x && 
+                if (!invincible && player.x < e.x + e.width && player.x + player.width > e.x && 
                     player.y < e.y + e.height && player.y + player.height > e.y) {
                     
                     // 只有乌龟 (turtle) 可以从上方踩死
@@ -1058,6 +1065,8 @@
                         coins.push(new CoinEffect(player.x, player.y, "-20", "#FF0000")); 
                         player.vy = -10; 
                         player.vx = (player.x < e.x ? -1 : 1) * 10;
+                        invincible = true;
+                        invincibleTimer = Date.now() + INVINCIBLE_DURATION;
                     }
                 }
                 player.bullets.forEach(b => { if (b.active && b.x < e.x + e.width && b.x + b.width > e.x && b.y - cameraY < (e.y - cameraY) + e.height && (b.y - cameraY) + b.height > (e.y - cameraY)) { e.die(); b.active = false; score += 5; updateHUD(); coins.push(new CoinEffect(e.x, e.y, "+5", "#00FF00")); } });
