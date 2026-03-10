@@ -97,21 +97,25 @@
             color: white;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; /* 改为从顶部开始，防止 center 裁剪顶部 */
             align-items: center;
             z-index: 10;
-            padding: 20px;
+            padding: 40px 20px; /* 增加顶部内边距，确保马头可见 */
             box-sizing: border-box;
-            overflow-y: auto; /* 允许内容过多时滚动，防止消失 */
+            overflow-y: auto;
         }
 
-        #start-screen {
-            padding-top: 40px; /* 为顶部留出空间 */
+        /* PC 端保持居中感，但通过 padding 留白 */
+        @media screen and (min-height: 650px) {
+            .overlay {
+                justify-content: center;
+                padding-top: 20px;
+            }
         }
 
         #start-screen h1 {
             font-size: 2rem;
-            margin: 5px 0;
+            margin: 10px 0;
         }
 
         .instructions {
