@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>顶蘑菇小游戏 - 微信分享版</title>
-    <!-- 引入 LeanCloud SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.12.0/dist/av-min.js"></script>
+    <title>顶蘑菇小游戏 - 微信国内加速版</title>
+    <!-- 移除外部阻塞脚本，改用轻量级处理 -->
     <style>
         body {
             margin: 0;
@@ -506,17 +505,17 @@
         // 初始化显示引导
         window.onload = function() {
             if (isWechat()) {
-                document.getElementById('wechat-guide').style.display = 'block';
+                // 如果是国内 Gitee 域名，可以考虑不强制显示引导，因为 Gitee 访问很稳
+                if (location.hostname.indexOf('gitee.io') === -1) {
+                    document.getElementById('wechat-guide').style.display = 'block';
+                }
             }
         };
 
-        // 初始化 LeanCloud (临时测试用 AppID/Key)
-        // 注意：建议您正式发布前替换为您自己的免费 AppID，以确保数据安全性。
-        AV.init({
-            appId: "vBfM3O6U2P8Y9X1Q2W3E4R5T-gzGzoHsz",
-            appKey: "yH8U7I6O5P4L3K2J1H0G9F8D",
-            serverURL: "https://vbfm3o6u.lc-cn-n1-shared.com"
-        });
+        // 移除 LeanCloud 依赖，改用纯 ntfy.sh 云端同步
+        const AV = {
+            init: () => console.log("LeanCloud SDK 已移除，切换至轻量级同步模式")
+        };
 
         // 将所有逻辑合并在此
         const canvas = document.getElementById('gameCanvas');
